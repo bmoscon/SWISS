@@ -72,5 +72,7 @@ int main(int argc, char *argv[])
     ;
   }
 
+  swiss_mm.modUnload();
+
   return (EXIT_SUCCESS);
 }

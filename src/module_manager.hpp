@@ -126,6 +126,7 @@ public:
   void modUnload()
   {
     for (unsigned int i = 0; i < module_list_.size(); ++i) {
+      server_list_[i].stop();
       assert(module_list_[i].fps->unload() == 0);
     }
   }
