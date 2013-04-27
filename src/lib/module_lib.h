@@ -1,11 +1,11 @@
 /*
- * example.cc
+ * module_lib.h
  *
  *
- * Example Swiss Loadable Module
+ * Swiss Loadable Module Library
  *
  *
- * Copyright (C) 2012-2013  Bryant Moscon - bmoscon@gmail.com
+ * Copyright (C) 2013  Bryant Moscon - bmoscon@gmail.com
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to 
@@ -45,32 +45,19 @@
  *
  */
 
-#include <iostream>
-#include "include/module.h"
+#ifndef __SWISS_MODULE_LIB__
+#define __SWISS_MODULE_LIB__
 
-extern "C" int load()
-{
-  // return the port we are interested in
-  return (8080);
-}
+#include <stdint.h>
 
-extern "C" void work(void *data)
-{
-  swiss_work_st *work;
-  
-  if (!data) {
-    return;
-  }
-  
-  work = (swiss_work_st *)data;
 
-  std::cout << "got FD " << work->fd << std::endl;
-  
-  delete work;
-}
+int swiss_recv(int fd, uint8_t* buffer, const size_t len, const int flags);
+int swiss_recvfrom();
+int swiss_read(int fd, uint8_t* buffer, const size_t len);
 
-extern "C" int unload()
-{
-  // nothing to do here
-  return (0);
-}
+int swiss_send();
+int swiss_sendto();
+int swiss_write(int fd, const uint8_t* buffer, const size_t len);
+
+
+#endif

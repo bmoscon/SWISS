@@ -1,11 +1,11 @@
 /*
- * example.cc
+ * module.h
  *
  *
- * Example Swiss Loadable Module
+ * Swiss Loadable Module Header
  *
  *
- * Copyright (C) 2012-2013  Bryant Moscon - bmoscon@gmail.com
+ * Copyright (C) 2013  Bryant Moscon - bmoscon@gmail.com
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to 
@@ -45,32 +45,23 @@
  *
  */
 
-#include <iostream>
-#include "include/module.h"
+#ifndef __SWISS_MODULE__
+#define __SWISS_MODULE__
 
-extern "C" int load()
-{
-  // return the port we are interested in
-  return (8080);
-}
+#include <netinet/in.h>
 
-extern "C" void work(void *data)
-{
-  swiss_work_st *work;
+typedef struct swiss_work_st {
+  int fd;
+  struct sockaddr_in addr;
   
-  if (!data) {
-    return;
-  }
-  
-  work = (swiss_work_st *)data;
+} swiss_work_st;
 
-  std::cout << "got FD " << work->fd << std::endl;
-  
-  delete work;
-}
 
-extern "C" int unload()
-{
-  // nothing to do here
-  return (0);
-}
+extern "C" int load();
+
+extern "C" void work(void *data);
+
+extern "C" int unload();
+
+
+#endif

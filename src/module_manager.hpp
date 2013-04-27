@@ -59,7 +59,7 @@
 #include <dlfcn.h>
 #include <dirent.h>
 
-#include "sserver.hpp"
+#include "swiss_server.hpp"
 
 
 class ModuleManager {
@@ -118,7 +118,7 @@ public:
   void modLoad()
   {
     for (unsigned int i = 0; i < module_list_.size(); ++i) {
-      server_list_.push_back(SServer(4, module_list_[i].fps->load(), module_list_[i].fps->work));
+      server_list_.push_back(SwissServer(4, module_list_[i].fps->load(), module_list_[i].fps->work));
       server_list_[server_list_.size() - 1].start();
     }
   }
@@ -144,7 +144,7 @@ private:
   } module_st;
   
   std::vector<module_st> module_list_;
-  std::vector<SServer> server_list_;
+  std::vector<SwissServer> server_list_;
 };
 
 

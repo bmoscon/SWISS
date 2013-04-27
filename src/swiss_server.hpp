@@ -1,8 +1,8 @@
 /*
- * example.cc
+ * swiss_server.hpp
  *
  *
- * Example Swiss Loadable Module
+ * Swiss Server
  *
  *
  * Copyright (C) 2012-2013  Bryant Moscon - bmoscon@gmail.com
@@ -45,32 +45,96 @@
  *
  */
 
-#include <iostream>
+#ifndef __SWISS_SERVER__
+#define __SWISS_SERVER__
+
+#include <cstdio>
+#include <cstring>
+#include <cassert>
+
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+
+#include "thread_pool/thread_pool.hpp"
 #include "include/module.h"
 
-extern "C" int load()
-{
-  // return the port we are interested in
-  return (8080);
-}
+#define LISTEN_Q_SIZE 1024
 
-extern "C" void work(void *data)
-{
-  swiss_work_st *work;
-  
-  if (!data) {
-    return;
+
+class SwissServer {
+
+public:
+
+  SwissServer(unsigned int t, unsigned int port, void (*w)(void *)) : threads_(ThreadPool(t)), 
+								      work_fp_(w),
+								      run_(true)
+  {  
+    bzero(&server_addr_, sizeof(server_addr_));
+    server_addr_.sin_family = AF_INET;
+    server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr_.sin_port = htons(port);
   }
-  
-  work = (swiss_work_st *)data;
 
-  std::cout << "got FD " << work->fd << std::endl;
-  
-  delete work;
-}
+  ~SwissServer()
+  {
+    stop();
+  }
 
-extern "C" int unload()
-{
-  // nothing to do here
-  return (0);
-}
+  void start() 
+  { 
+    threads_.start();
+    threads_.addWork(&mainThread, this);
+  }
+
+  void stop()
+  {
+    run_ = false;
+    threads_.stop();
+  }
+
+private:
+
+  void handleRequest(void *data)
+  {
+    threads_.addWork(work_fp_, data);
+  }
+
+  static void mainThread(void *data)
+  {
+    int listen_fd;
+    int conn_fd;
+    struct sockaddr_in addr = ((SwissServer *)data)->server_addr_;
+    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+    assert(listen_fd);
+    
+    assert(bind(listen_fd, (struct sockaddr *) &addr, sizeof(addr)) >= 0);
+    
+    assert(listen(listen_fd, LISTEN_Q_SIZE) >= 0);
+    while (((SwissServer *)data)->run_) {
+      swiss_work_st *work_data = new swiss_work_st;
+      socklen_t len;
+      do {
+	len = sizeof(work_data->addr);
+	if ((conn_fd = accept(listen_fd, (struct sockaddr *) &(work_data->addr), &len)) < 0) {
+	  if ((errno != EPROTO) && (errno != ECONNABORTED)) {
+	    assert(false);
+	  }
+	}
+      } while (errno == EPROTO || errno == ECONNABORTED);
+      
+      work_data->fd = conn_fd;
+      ((SwissServer *)data)->handleRequest((void *)data);
+    }
+  }
+
+  ThreadPool threads_;
+  struct sockaddr_in server_addr_;
+  void (*work_fp_)(void *opaque);
+  bool run_;
+};
+
+
+#endif

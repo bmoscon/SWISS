@@ -1,11 +1,11 @@
 /*
- * sserver.hpp
+ * module_lib.c
  *
  *
- * Swiss Server
+ * Swiss Loadable Module Library
  *
  *
- * Copyright (C) 2012-2013  Bryant Moscon - bmoscon@gmail.com
+ * Copyright (C) 2013  Bryant Moscon - bmoscon@gmail.com
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to 
@@ -45,12 +45,6 @@
  *
  */
 
-#ifndef __SSERVER__
-#define __SSERVER__
-
-#include <cstdio>
-#include <cstring>
-#include <cassert>
 
 #include <unistd.h>
 #include <sys/socket.h>
@@ -58,77 +52,76 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
-#include "thread_pool/thread_pool.hpp"
-
-#define LISTEN_Q_SIZE 1024
 
 
-class SServer {
+#include "module_lib.h"
+int swiss_recv(int fd, uint8_t* buffer, const size_t len, const int flags)
+{
+  
+  return 0;
+}
 
-public:
 
-  SServer(unsigned int t, unsigned int port, void (*w)(void *)) : threads_(ThreadPool(t)), 
-								  work_fp_(w),
-								  run_(true)
-  {  
-    bzero(&server_addr_, sizeof(server_addr_));
-    server_addr_.sin_family = AF_INET;
-    server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr_.sin_port = htons(port);
+
+int swiss_read(int fd, uint8_t* buffer, const size_t len)
+{
+  uint32_t remaining_bytes = len;
+  int32_t  read_bytes;
+
+  if ((!buffer) || (!len) || (fd == -1)) {
+    // todo: log error
+    return (-1);
   }
-
-  ~SServer()
-  {
-    stop();
-  }
-
-  void start() 
-  { 
-    threads_.start();
-    threads_.addWork(&mainThread, this);
-  }
-
-  void stop()
-  {
-    run_ = false;
-    threads_.stop();
-  }
-
-private:
-
-  void handleRequest(int fd)
-  {
-    threads_.addWork(work_fp_, &fd);
-  }
-
-  static void mainThread(void *data)
-  {
-    int listen_fd;
-    int conn_fd;
-    struct sockaddr_in addr = ((SServer *)data)->server_addr_;
-    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    assert(listen_fd);
-    
-    assert(bind(listen_fd, (struct sockaddr *) &addr, sizeof(addr)) >= 0);
-    
-    assert(listen(listen_fd, LISTEN_Q_SIZE) >= 0);
-    while (((SServer *)data)->run_) {
-      do {
-	if ((conn_fd = accept(listen_fd, (struct sockaddr *) NULL, NULL)) < 0) {
-	  if ((errno != EPROTO) && (errno != ECONNABORTED)) {
-	    assert(false);
-	  }
-	}
-      } while (errno == EPROTO || errno == ECONNABORTED);
-      ((SServer *)data)->handleRequest(conn_fd);
+  
+  while (remaining_bytes > 0) {
+    if ((read_bytes = read(fd, buffer, remaining_bytes)) < 0) {
+      if (errno == EINTR) {
+	read_bytes = 0;
+      } else {
+	// todo: log error
+	return (-1);
+      }
+    } else if (read_bytes == 0) {
+      break;
     }
+    
+    remaining_bytes -= read_bytes;
+    buffer += read_bytes;
   }
-
-  ThreadPool threads_;
-  struct sockaddr_in server_addr_;
-  void (*work_fp_)(void *opaque);
-  bool run_;
-};
+  
+  return (len - read_bytes);
+}
 
 
-#endif
+
+
+
+
+
+
+int swiss_write(int fd, const uint8_t* buffer, const size_t len)
+{
+  uint32_t remaining_bytes = len;
+  int32_t  write_bytes;
+  
+  if ((!buffer) || (!len) || (fd == -1)) {
+    // todo: log error
+    return (-1);
+  }
+  
+  while (remaining_bytes > 0) {
+    if ((write_bytes = write(fd, buffer, remaining_bytes)) <= 0) {
+      if ((errno == EINTR) && (write_bytes < 0)) {
+	write_bytes = 0;
+      } else {
+	// todo: log error
+	return (-1);
+      }
+    }
+    
+    remaining_bytes -= write_bytes;
+    buffer += write_bytes;
+  }
+  
+  return (len - remaining_bytes);
+}
