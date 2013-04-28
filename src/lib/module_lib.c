@@ -53,14 +53,71 @@
 #include <errno.h>
 
 
-
 #include "module_lib.h"
+
+
+
 int swiss_recv(int fd, uint8_t* buffer, const size_t len, const int flags)
 {
+  uint32_t remaining_bytes = len;
+  int32_t  read_bytes;
   
+  if ((!buffer) || (!len) || (fd == -1)) {
+    // todo: log error
+    return (-1);
+  }
+  
+  while (remaining_bytes > 0) {
+    if ((read_bytes = recv(fd, buffer, remaining_bytes, flags)) < 0) {
+      if (errno == EINTR) {
+	read_bytes = 0;
+      } else {
+	// todo: log error
+	return (-1);
+      }
+    } else if (read_bytes == 0) {
+      break;
+    }
+    
+    remaining_bytes -= read_bytes;
+    buffer += read_bytes;
+  }
+  
+  return (len - read_bytes);
   return 0;
 }
 
+
+int swiss_recvfrom(int fd, uint8_t* buffer, const size_t len, const int flags, 
+		   struct sockaddr *addr, socklen_t* addrlen)
+{
+  uint32_t remaining_bytes = len;
+  int32_t  read_bytes;
+  
+  if ((!buffer) || (!len) || (fd == -1)) {
+    // todo: log error
+    return (-1);
+  }
+  
+  while (remaining_bytes > 0) {
+    if ((read_bytes = recvfrom(fd, buffer, remaining_bytes, flags, addr, addrlen)) < 0) {
+      if (errno == EINTR) {
+	read_bytes = 0;
+      } else {
+	// todo: log error
+	return (-1);
+      }
+    } else if (read_bytes == 0) {
+      break;
+    }
+    
+    remaining_bytes -= read_bytes;
+    buffer += read_bytes;
+  }
+  
+  return (len - read_bytes);
+  return 0;
+}
 
 
 int swiss_read(int fd, uint8_t* buffer, const size_t len)
@@ -93,10 +150,61 @@ int swiss_read(int fd, uint8_t* buffer, const size_t len)
 }
 
 
+int swiss_send(int fd, const uint8_t* buffer, const size_t len, const int flags)
+{
+  uint32_t remaining_bytes = len;
+  int32_t  write_bytes;
+  
+  if ((!buffer) || (!len) || (fd == -1)) {
+    // todo: log error
+    return (-1);
+  }
+  
+  while (remaining_bytes > 0) {
+    if ((write_bytes = send(fd, buffer, remaining_bytes, flags)) <= 0) {
+      if ((errno == EINTR) && (write_bytes < 0)) {
+	write_bytes = 0;
+      } else {
+	// todo: log error
+	return (-1);
+      }
+    }
+    
+    remaining_bytes -= write_bytes;
+    buffer += write_bytes;
+  }
+  
+  return (len - remaining_bytes);
+}
 
 
-
-
+int swiss_sendto(int fd, const uint8_t* buffer, const size_t len, const int flags, 
+		 const struct sockaddr *addr, socklen_t addrlen)
+{
+  uint32_t remaining_bytes = len;
+  int32_t  write_bytes;
+  
+  if ((!buffer) || (!len) || (fd == -1)) {
+    // todo: log error
+    return (-1);
+  }
+  
+  while (remaining_bytes > 0) {
+    if ((write_bytes = sendto(fd, buffer, remaining_bytes, flags, addr, addrlen)) <= 0) {
+      if ((errno == EINTR) && (write_bytes < 0)) {
+	write_bytes = 0;
+      } else {
+	// todo: log error
+	return (-1);
+      }
+    }
+    
+    remaining_bytes -= write_bytes;
+    buffer += write_bytes;
+  }
+  
+  return (len - remaining_bytes);
+}
 
 
 int swiss_write(int fd, const uint8_t* buffer, const size_t len)
