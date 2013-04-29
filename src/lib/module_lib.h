@@ -50,16 +50,28 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus 
+extern "C" {
+#endif
 
-int swiss_recv(int fd, uint8_t* buffer, const size_t len, const int flags);
-int swiss_recvfrom(int fd, uint8_t* buffer, const size_t len, const int flags, 
-		   struct sockaddr *addr, socklen_t* addrlen);
-int swiss_read(int fd, uint8_t* buffer, const size_t len);
+int swiss_recv(int fd, uint8_t *buffer, const size_t len, const int flags);
+int swiss_recvfrom(int fd, uint8_t *buffer, const size_t len, const int flags, 
+		   struct sockaddr *addr, socklen_t *addrlen);
+int swiss_read(int fd, uint8_t *buffer, const size_t len);
 
-int swiss_send(int fd, const uint8_t* buffer, const size_t len, const int flags);
-int swiss_sendto(int fd, const uint8_t* buffer, const size_t len, const int flags, 
-		 const struct sockaddr *addr, socklen_t addrlen);
-int swiss_write(int fd, const uint8_t* buffer, const size_t len);
+  
+int swiss_send(int fd, const uint8_t *buffer, const size_t len, const int flags);
+int swiss_sendto(int fd, const uint8_t *buffer, const size_t len, const int flags, 
+		 const struct sockaddr *addr, const socklen_t addrlen);
+int swiss_write(int fd, const uint8_t *buffer, const size_t len);
+
+
+void swiss_close(int *fd);
+
+
+#ifdef __cplusplus 
+}
+#endif
 
 
 #endif

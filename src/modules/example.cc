@@ -46,7 +46,11 @@
  */
 
 #include <iostream>
+#include <cstring>
+#include <stdint.h>
+
 #include "include/module.h"
+#include "lib/module_lib.h"
 
 extern "C" int load()
 {
@@ -56,15 +60,29 @@ extern "C" int load()
 
 extern "C" void work(void *data)
 {
+  int flags;
+  int read;
   swiss_work_st *work;
+  char read_buffer[10240];
+  char buffer[] = "HTTP/1.1 200 OK\nContent-length: 40\nContent-Type: text/html\n\n<html><body><H1>Hello</H1></body></html>";
   
   if (!data) {
     return;
   }
   
   work = (swiss_work_st *)data;
-
+  
   std::cout << "got FD " << work->fd << std::endl;
+  std::cout << "Read: \n";
+
+  read = swiss_read(work->fd, (uint8_t *)read_buffer, 10240);
+  
+  std::cout << read_buffer << std::endl;
+  std::cout.flush();
+  
+  swiss_write(work->fd, (const uint8_t *)buffer, strlen(buffer));
+  
+  swiss_close(&work->fd);
   
   delete work;
 }

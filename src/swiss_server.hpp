@@ -102,18 +102,18 @@ private:
     threads_.addWork(work_fp_, data);
   }
 
-  static void mainThread(void *data)
+  static void mainThread(void *server)
   {
     int listen_fd;
     int conn_fd;
-    struct sockaddr_in addr = ((SwissServer *)data)->server_addr_;
+    struct sockaddr_in addr = ((SwissServer *)server)->server_addr_;
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     assert(listen_fd);
     
     assert(bind(listen_fd, (struct sockaddr *) &addr, sizeof(addr)) >= 0);
     
     assert(listen(listen_fd, LISTEN_Q_SIZE) >= 0);
-    while (((SwissServer *)data)->run_) {
+    while (((SwissServer *)server)->run_) {
       swiss_work_st *work_data = new swiss_work_st;
       socklen_t len;
       do {
@@ -126,7 +126,7 @@ private:
       } while (errno == EPROTO || errno == ECONNABORTED);
       
       work_data->fd = conn_fd;
-      ((SwissServer *)data)->handleRequest((void *)data);
+      ((SwissServer *)server)->handleRequest((void *)work_data);
     }
   }
 

@@ -57,9 +57,8 @@
 
 
 
-int swiss_recv(int fd, uint8_t* buffer, const size_t len, const int flags)
+int swiss_recv(int fd, uint8_t *buffer, const size_t len, const int flags)
 {
-  uint32_t remaining_bytes = len;
   int32_t  read_bytes;
   
   if ((!buffer) || (!len) || (fd == -1)) {
@@ -67,31 +66,22 @@ int swiss_recv(int fd, uint8_t* buffer, const size_t len, const int flags)
     return (-1);
   }
   
-  while (remaining_bytes > 0) {
-    if ((read_bytes = recv(fd, buffer, remaining_bytes, flags)) < 0) {
-      if (errno == EINTR) {
-	read_bytes = 0;
-      } else {
+  do {
+    if ((read_bytes = recv(fd, buffer, len, flags)) < 0) {
+      if (errno != EINTR) {
 	// todo: log error
 	return (-1);
       }
-    } else if (read_bytes == 0) {
-      break;
     }
-    
-    remaining_bytes -= read_bytes;
-    buffer += read_bytes;
-  }
-  
-  return (len - read_bytes);
-  return 0;
+  } while (errno == EINTR);
+
+  return (read_bytes);
 }
 
 
 int swiss_recvfrom(int fd, uint8_t* buffer, const size_t len, const int flags, 
-		   struct sockaddr *addr, socklen_t* addrlen)
+		   struct sockaddr *addr, socklen_t *addrlen)
 {
-  uint32_t remaining_bytes = len;
   int32_t  read_bytes;
   
   if ((!buffer) || (!len) || (fd == -1)) {
@@ -99,58 +89,42 @@ int swiss_recvfrom(int fd, uint8_t* buffer, const size_t len, const int flags,
     return (-1);
   }
   
-  while (remaining_bytes > 0) {
-    if ((read_bytes = recvfrom(fd, buffer, remaining_bytes, flags, addr, addrlen)) < 0) {
-      if (errno == EINTR) {
-	read_bytes = 0;
-      } else {
+  do {
+    if ((read_bytes = recvfrom(fd, buffer, len, flags, addr, addrlen)) < 0) {
+      if (errno != EINTR) {
 	// todo: log error
 	return (-1);
       }
-    } else if (read_bytes == 0) {
-      break;
     }
-    
-    remaining_bytes -= read_bytes;
-    buffer += read_bytes;
-  }
+  } while (errno == EINTR);
   
-  return (len - read_bytes);
-  return 0;
+  return (read_bytes);
 }
 
 
-int swiss_read(int fd, uint8_t* buffer, const size_t len)
+int swiss_read(int fd, uint8_t *buffer, const size_t len)
 {
-  uint32_t remaining_bytes = len;
   int32_t  read_bytes;
-
+  
   if ((!buffer) || (!len) || (fd == -1)) {
     // todo: log error
     return (-1);
   }
   
-  while (remaining_bytes > 0) {
-    if ((read_bytes = read(fd, buffer, remaining_bytes)) < 0) {
-      if (errno == EINTR) {
-	read_bytes = 0;
-      } else {
+  do {
+    if ((read_bytes = read(fd, buffer, len)) < 0) {
+      if (errno != EINTR) {
 	// todo: log error
 	return (-1);
       }
-    } else if (read_bytes == 0) {
-      break;
     }
-    
-    remaining_bytes -= read_bytes;
-    buffer += read_bytes;
-  }
+  } while (errno == EINTR);
   
-  return (len - read_bytes);
+  return (read_bytes);
 }
 
 
-int swiss_send(int fd, const uint8_t* buffer, const size_t len, const int flags)
+int swiss_send(int fd, const uint8_t *buffer, const size_t len, const int flags)
 {
   uint32_t remaining_bytes = len;
   int32_t  write_bytes;
@@ -178,8 +152,8 @@ int swiss_send(int fd, const uint8_t* buffer, const size_t len, const int flags)
 }
 
 
-int swiss_sendto(int fd, const uint8_t* buffer, const size_t len, const int flags, 
-		 const struct sockaddr *addr, socklen_t addrlen)
+int swiss_sendto(int fd, const uint8_t *buffer, const size_t len, const int flags, 
+		 const struct sockaddr *addr, const socklen_t addrlen)
 {
   uint32_t remaining_bytes = len;
   int32_t  write_bytes;
@@ -207,7 +181,7 @@ int swiss_sendto(int fd, const uint8_t* buffer, const size_t len, const int flag
 }
 
 
-int swiss_write(int fd, const uint8_t* buffer, const size_t len)
+int swiss_write(int fd, const uint8_t *buffer, const size_t len)
 {
   uint32_t remaining_bytes = len;
   int32_t  write_bytes;
@@ -232,4 +206,13 @@ int swiss_write(int fd, const uint8_t* buffer, const size_t len)
   }
   
   return (len - remaining_bytes);
+}
+
+
+void swiss_close(int *fd)
+{
+  if (fd) {
+    close(*fd);
+    *fd = -1;
+  }
 }
